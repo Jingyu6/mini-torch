@@ -22,8 +22,16 @@ def central_difference(f: Any, *vals: Any, arg: int = 0, epsilon: float = 1e-6) 
     Returns:
         An approximation of $f'_i(x_0, \ldots, x_{n-1})$
     """
-    # TODO: Implement for Task 1.1.
-    raise NotImplementedError('Need to implement for Task 1.1')
+    vals_plus, vals_minus = [], []
+    for idx, val in enumerate(vals):
+        if idx == arg:
+            vals_plus.append(val + epsilon * 0.5)
+            vals_minus.append(val - epsilon * 0.5)
+        else:
+            vals_plus.append(val)
+            vals_minus.append(val)
+
+    return (f(*vals_plus) - f(*vals_minus)) / epsilon
 
 
 variable_count = 1
