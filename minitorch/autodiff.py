@@ -69,8 +69,27 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
     Returns:
         Non-constant Variables in topological order starting from the right.
     """
-    # TODO: Implement for Task 1.4.
-    raise NotImplementedError('Need to implement for Task 1.4')
+
+    stack = []
+    visited = []
+
+    def _dfs(current: Variable) -> None:
+        if current.unique_id in visited:
+            return
+        
+        visited.append(current.unique_id)
+
+        if not current.is_leaf() and not current.is_constant():
+            for parent in current.parents:
+                if parent.unique_id not in visited:
+                    _dfs(parent)
+        
+        if not current.is_constant():
+            stack.append(current)
+
+    _dfs(variable)
+    
+    return reversed(stack)
 
 
 def backpropagate(variable: Variable, deriv: Any) -> None:
@@ -84,8 +103,24 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
 
     No return. Should write to its results to the derivative values of each leaf through `accumulate_derivative`.
     """
-    # TODO: Implement for Task 1.4.
-    raise NotImplementedError('Need to implement for Task 1.4')
+
+    partial_adjoints = {}
+    partial_adjoints[variable.unique_id] = [deriv]
+
+    for cur_var in topological_sort(variable):
+        if cur_var.is_constant():
+            continue
+        
+        # derivative of the output w.r.t. the node
+        adjoint = sum(partial_adjoints[cur_var.unique_id])
+
+        if cur_var.is_leaf():
+            cur_var.accumulate_derivative(adjoint)
+        else:
+            for (parent_var, parent_partial_adjoint) in cur_var.chain_rule(adjoint):
+                if parent_var.unique_id not in partial_adjoints:
+                    partial_adjoints[parent_var.unique_id] = []
+                partial_adjoints[parent_var.unique_id].append(parent_partial_adjoint)
 
 
 @dataclass
