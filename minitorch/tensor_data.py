@@ -96,8 +96,20 @@ def broadcast_index(
     Returns:
         None
     """
-    # TODO: Implement for Task 2.2.
-    raise NotImplementedError('Need to implement for Task 2.2')
+
+    # NOT TESTED
+    for j in range(len(out_index)):
+        i = - j - 1
+
+        idx = big_index[i]
+        big_dim = big_shape[i]
+        dim = shape[i]
+
+        if big_dim == dim:
+            out_index[i] = idx
+        else:
+            assert dim == 0
+            out_index[i] = 0
 
 
 def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
@@ -114,8 +126,39 @@ def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
     Raises:
         IndexingError : if cannot broadcast
     """
-    # TODO: Implement for Task 2.2.
-    raise NotImplementedError('Need to implement for Task 2.2')
+
+    """
+        Rule 1: Any dimension of size 1 can be zipped with dimensions of size n > 1 
+            by assuming the dimension is copied n times.
+        Rule 2: Extra dimensions of shape 1 can be added to a tensor to ensure the same 
+            number of dimensions with another tensor.
+        Rule 3: Any extra dimension of size 1 can only be implicitly added 
+            on the left side of the shape.
+    """
+
+    # first make sure that the len of shapes are equal by padding left
+    s1 = list(shape1)
+    s2 = list(shape2)
+
+    final_size = max(len(s1), len(s2))
+    s1 = [1] * (final_size - len(s1)) + s1
+    s2 = [1] * (final_size - len(s2)) + s2
+
+    for i in reversed(range(final_size)):
+        d1 = s1[i]
+        d2 = s2[i]
+
+        if d1 != d2:
+
+            if d1 == 1:
+                s1[i] = d2
+            elif d2 == 1:
+                s2[i] = d1
+            else:
+                raise IndexingError(f"Shape {shape1} and {shape2} do not broadcast.")
+
+    assert s1 == s2
+    return tuple(s1)
 
 
 def strides_from_shape(shape: UserShape) -> UserStrides:
