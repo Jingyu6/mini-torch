@@ -257,15 +257,26 @@ def tensor_map(
     """
 
     def _map(
-        out: Storage,
+        out_storage: Storage,
         out_shape: Shape,
         out_strides: Strides,
         in_storage: Storage,
         in_shape: Shape,
         in_strides: Strides,
     ) -> None:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
+        
+        for ordinal in range(len(out_storage)):
+            # calculate the index
+            out_ind = np.array(out_shape)
+            in_ind = np.array(in_shape)
+            to_index(ordinal, out_shape, out_ind)
+            broadcast_index(out_ind, out_shape,  in_shape, in_ind)
+
+            # calculate the position
+            in_pos = index_to_position(in_ind, in_strides)
+            out_pos = index_to_position(out_ind, out_strides)
+
+            out_storage[out_pos] = fn(in_storage[in_pos])
 
     return _map
 
@@ -299,7 +310,7 @@ def tensor_zip(
     """
 
     def _zip(
-        out: Storage,
+        out_storage: Storage,
         out_shape: Shape,
         out_strides: Strides,
         a_storage: Storage,
@@ -309,8 +320,23 @@ def tensor_zip(
         b_shape: Shape,
         b_strides: Strides,
     ) -> None:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
+        
+        for ordinal in range(len(out_storage)):
+            # calculate the index
+            out_ind = np.array(out_shape)
+            a_ind = np.array(a_shape)
+            b_ind = np.array(b_shape)
+            to_index(ordinal, out_shape, out_ind)
+            broadcast_index(out_ind, out_shape, a_shape, a_ind)
+            broadcast_index(out_ind, out_shape, b_shape, b_ind)
+
+            # calculate the position
+            a_pos = index_to_position(a_ind, a_strides)
+            b_pos = index_to_position(b_ind, b_strides)
+            out_pos = index_to_position(out_ind, out_strides)
+
+            out_storage[out_pos] = fn(a_storage[a_pos], b_storage[b_pos])
+
 
     return _zip
 
@@ -332,7 +358,7 @@ def tensor_reduce(
     """
 
     def _reduce(
-        out: Storage,
+        out_storage: Storage,
         out_shape: Shape,
         out_strides: Strides,
         a_storage: Storage,
@@ -340,8 +366,17 @@ def tensor_reduce(
         a_strides: Strides,
         reduce_dim: int,
     ) -> None:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
+        for ordinal in range(len(a_storage)):
+            a_ind = np.array(a_shape)
+            to_index(ordinal, a_shape, a_ind)
+
+            out_ind = a_ind.copy()
+            out_ind[reduce_dim] = 0
+
+            a_pos = index_to_position(a_ind, a_strides)
+            out_pos = index_to_position(out_ind, out_strides)
+
+            out_storage[out_pos] = fn(out_storage[out_pos], a_storage[a_pos])
 
     return _reduce
 

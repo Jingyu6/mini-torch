@@ -64,8 +64,6 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
 
     """
 
-    assert shape.size == out_index.size
-
     product = prod(shape[1:])
 
     for i in range(len(shape) - 1):
@@ -108,7 +106,8 @@ def broadcast_index(
         if big_dim == dim:
             out_index[i] = idx
         else:
-            assert dim == 0
+            assert dim == 1
+            # map to 0
             out_index[i] = 0
 
 
