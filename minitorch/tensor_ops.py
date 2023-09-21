@@ -270,7 +270,7 @@ def tensor_map(
             out_ind = np.array(out_shape)
             in_ind = np.array(in_shape)
             to_index(ordinal, out_shape, out_ind)
-            broadcast_index(out_ind, out_shape,  in_shape, in_ind)
+            broadcast_index(out_ind, out_shape, in_shape, in_ind)
 
             # calculate the position
             in_pos = index_to_position(in_ind, in_strides)

@@ -64,15 +64,19 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
 
     """
 
-    product = prod(shape[1:])
+    product = 1
+    for dim in shape[1:]:
+        product *= dim
+
+    pos = ordinal
 
     for i in range(len(shape) - 1):
-        idx = ordinal // product
+        idx = pos // product
         out_index[i] = idx
-        ordinal -= idx * product
+        pos -= idx * product
         product /= shape[i + 1]
     
-    out_index[-1] = ordinal
+    out_index[-1] = pos
 
 
 def broadcast_index(
