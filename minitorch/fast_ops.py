@@ -272,18 +272,17 @@ def tensor_reduce(
         
         for ordinal in prange(len(out_storage)):
             out_ind = np.empty_like(out_shape)
-            a_ind = np.empty_like(a_shape)
             to_index(ordinal, out_shape, out_ind)
+
             out_pos = index_to_position(out_ind, out_strides)
+            a_pos = index_to_position(out_ind, a_strides)
+            a_stride = a_strides[reduce_dim]
 
             value = out_storage[out_pos]
 
-            for i in range(a_shape[reduce_dim]):
-                a_ind = out_ind.copy()
-                a_ind[reduce_dim] = i
-
-                a_pos = index_to_position(a_ind, a_strides)
+            for _ in range(a_shape[reduce_dim]):
                 value = fn(value, a_storage[a_pos])
+                a_pos += a_stride
             
             out_storage[out_pos] = value
 
