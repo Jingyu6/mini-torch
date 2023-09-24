@@ -166,9 +166,10 @@ def tensor_map(
                 out_storage[idx] = fn(in_storage[idx])
         else:
             for ordinal in prange(len(out_storage)):
+                out_ind = np.zeros(MAX_DIMS, np.int32) # can no longer reuse
+                in_ind = np.zeros(MAX_DIMS, np.int32)
+
                 # calculate the index
-                out_ind = np.empty_like(out_shape)
-                in_ind = np.empty_like(in_shape)
                 to_index(ordinal, out_shape, out_ind)
                 broadcast_index(out_ind, out_shape, in_shape, in_ind)
 
@@ -223,10 +224,11 @@ def tensor_zip(
                 out_storage[idx] = fn(a_storage[idx], b_storage[idx])
         else:
             for ordinal in prange(len(out_storage)):
+                out_ind = np.zeros(MAX_DIMS, np.int32)
+                a_ind = np.zeros(MAX_DIMS, np.int32)
+                b_ind = np.zeros(MAX_DIMS, np.int32)
+
                 # calculate the index
-                out_ind = np.empty_like(out_shape)
-                a_ind = np.empty_like(a_shape)
-                b_ind = np.empty_like(b_shape)
                 to_index(ordinal, out_shape, out_ind)
                 broadcast_index(out_ind, out_shape, a_shape, a_ind)
                 broadcast_index(out_ind, out_shape, b_shape, b_ind)
@@ -271,7 +273,7 @@ def tensor_reduce(
     ) -> None:
         
         for ordinal in prange(len(out_storage)):
-            out_ind = np.empty_like(out_shape)
+            out_ind = np.zeros(MAX_DIMS, np.int32)
             to_index(ordinal, out_shape, out_ind)
 
             out_pos = index_to_position(out_ind, out_strides)

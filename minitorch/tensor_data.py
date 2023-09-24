@@ -63,20 +63,11 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
         out_index : return index corresponding to position.
 
     """
-
-    product = 1
-    for dim in shape[1:]:
-        product *= dim
-
-    pos = ordinal
-
-    for i in range(len(shape) - 1):
-        idx = pos // product
-        out_index[i] = idx
-        pos -= idx * product
-        product /= shape[i + 1]
-    
-    out_index[-1] = pos
+    pos = ordinal + 0 # weird hack for numba to create a new var
+    # for i in reversed(range(len(shape))):
+    for i in range(len(shape) - 1, -1, -1): # required for numba jit
+        out_index[i] = int(pos % shape[i])
+        pos /= shape[i]
 
 
 def broadcast_index(
@@ -98,21 +89,14 @@ def broadcast_index(
     Returns:
         None
     """
+    shape_diff = len(big_shape) - len(shape)
 
-    # NOT TESTED
-    for j in range(len(out_index)):
-        i = - j - 1
-
-        idx = big_index[i]
-        big_dim = big_shape[i]
-        dim = shape[i]
-
-        if big_dim == dim:
-            out_index[i] = idx
-        else:
-            assert dim == 1
-            # map to 0
+    for i in range(len(shape)):
+        small_shape = shape[i]
+        if small_shape == 1:
             out_index[i] = 0
+        else:
+            out_index[i] = big_index[i + shape_diff]
 
 
 def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
