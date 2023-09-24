@@ -290,7 +290,7 @@ def tensor_reduce(
 
 
 def _tensor_matrix_multiply(
-    out: Storage,
+    out_storage: Storage,
     out_shape: Shape,
     out_strides: Strides,
     a_storage: Storage,
@@ -317,7 +317,7 @@ def _tensor_matrix_multiply(
 
 
     Args:
-        out (Storage): storage for `out` tensor
+        out_storage (Storage): storage for `out` tensor
         out_shape (Shape): shape for `out` tensor
         out_strides (Strides): strides for `out` tensor
         a_storage (Storage): storage for `a` tensor
@@ -333,8 +333,32 @@ def _tensor_matrix_multiply(
     a_batch_stride = a_strides[0] if a_shape[0] > 1 else 0
     b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
 
-    # TODO: Implement for Task 3.2.
-    raise NotImplementedError('Need to implement for Task 3.2')
+    # Based on the above starter code, all tensors must have 3 dimension
+    assert len(a_shape) <= 3 and len(b_shape) <= 3
+    assert a_shape[-1] == b_shape[-2]
+
+    # constants
+    M, N, K = a_shape[-2], a_shape[-1], b_shape[-1]
+    B = out_shape[0]
+
+    # iterate over each output position and backward indexing
+    for b in prange(B):
+        for i in prange(M):
+            for k in prange(K):
+                val = 0
+
+                # this is where broadcasting happens
+                a_idx = b * a_batch_stride + i * a_strides[1]
+                b_idx = b * b_batch_stride + k * b_strides[2]
+
+                # iterate over intermediate
+                for _ in range(N):
+                    val += a_storage[a_idx] * b_storage[b_idx]
+                    a_idx += a_strides[2]
+                    b_idx += b_strides[1]
+                
+                out_idx = b * out_strides[0] + i * out_strides[1] + k * out_strides[2]
+                out_storage[out_idx] = val
 
 
 tensor_matrix_multiply = njit(parallel=True, fastmath=True)(_tensor_matrix_multiply)
