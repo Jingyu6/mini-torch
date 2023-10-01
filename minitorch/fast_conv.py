@@ -7,7 +7,7 @@ from .autodiff import Context
 from .tensor import Tensor
 from .tensor_data import (
     MAX_DIMS,
-    Index,
+    Storage,
     Shape,
     Strides,
     broadcast_index,
@@ -25,14 +25,14 @@ broadcast_index = njit(inline="always")(broadcast_index)
 
 
 def _tensor_conv1d(
-    out: Tensor,
+    out_storage: Storage,
     out_shape: Shape,
     out_strides: Strides,
     out_size: int,
-    input: Tensor,
+    input_storage: Storage,
     input_shape: Shape,
     input_strides: Strides,
-    weight: Tensor,
+    weight_storage: Storage,
     weight_shape: Shape,
     weight_strides: Strides,
     reverse: bool,
@@ -77,11 +77,50 @@ def _tensor_conv1d(
         and in_channels == in_channels_
         and out_channels == out_channels_
     )
-    s1 = input_strides
-    s2 = weight_strides
 
-    # TODO: Implement for Task 4.1.
-    raise NotImplementedError('Need to implement for Task 4.1')
+    for i in prange(out_size):
+        out_idx = np.zeros(MAX_DIMS, np.int32)
+        in_idx = np.zeros(MAX_DIMS, np.int32)
+        weight_idx = np.zeros(MAX_DIMS, np.int32)
+        to_index(i, out_shape, out_idx)
+
+        b, oc, pos = out_idx[0], out_idx[1], out_idx[2]
+        
+        tmp = 0
+        for ic in range(in_channels):
+            for k_pos in range(kw):
+                if reverse:
+                    if pos - k_pos < 0:
+                        # 0 padding
+                        continue
+                    else:
+                        in_idx[0] = b
+                        in_idx[1] = ic
+                        in_idx[2] = pos - k_pos
+
+                        weight_idx[0] = oc
+                        weight_idx[1] = ic
+                        weight_idx[2] = k_pos
+                        
+                        tmp += input_storage[index_to_position(in_idx, input_strides)] * \
+                            weight_storage[index_to_position(weight_idx, weight_strides)]
+                else:
+                    if pos + k_pos >= width:
+                        # 0 padding
+                        continue
+                    else:
+                        in_idx[0] = b
+                        in_idx[1] = ic
+                        in_idx[2] = pos + k_pos
+
+                        weight_idx[0] = oc
+                        weight_idx[1] = ic
+                        weight_idx[2] = k_pos
+
+                        tmp += input_storage[index_to_position(in_idx, input_strides)] * \
+                            weight_storage[index_to_position(weight_idx, weight_strides)]
+        
+        out_storage[index_to_position(out_idx, out_strides)] = tmp
 
 
 tensor_conv1d = njit(parallel=True)(_tensor_conv1d)
@@ -139,6 +178,7 @@ class Conv1dFun(Function):
             *new_weight.tuple(),
             True,
         )
+
         return grad_input, grad_weight
 
 

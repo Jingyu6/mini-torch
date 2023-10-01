@@ -213,24 +213,14 @@ class Permute(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, order: Tensor) -> Tensor:
         order_tuple = order.to_numpy().astype(int).tolist()
-        # if the order is [0, 2, 1], reverse order should be [0, 2, 1]
-        # if the order is [1, 2, 0], reverse order should be [2, 0, 1]
-        reverse_order_tuple = [order_tuple.index(i) for i in range(len(order_tuple))]
-        ctx.save_for_backward(reverse_order_tuple)
-        a._tensor = a._tensor.permute(*order_tuple)
-        return minitorch.Tensor(
-            v=a._tensor.permute(*order_tuple), 
-            backend=a.backend
-        )
+        ctx.save_for_backward(order_tuple)
+        return a._new(a._tensor.permute(*order_tuple))
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
-        (order_tuple,) = ctx.saved_tensors
-        grad_output._tensor = grad_output._tensor.permute(*order_tuple)
-        return minitorch.Tensor(
-            v=grad_output._tensor.permute(*order_tuple), 
-            backend=grad_output.backend
-        ), 0
+        (order_tuple,) = ctx.saved_values
+        r_order = [order_tuple.index(i) for i in range(len(order_tuple))]
+        return  grad_output._new(grad_output._tensor.permute(*r_order)), 0
 
 
 class View(Function):
