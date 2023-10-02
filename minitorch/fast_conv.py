@@ -186,14 +186,14 @@ conv1d = Conv1dFun.apply
 
 
 def _tensor_conv2d(
-    out: Tensor,
+    out_storage: Tensor,
     out_shape: Shape,
     out_strides: Strides,
     out_size: int,
-    input: Tensor,
+    input_storage: Tensor,
     input_shape: Shape,
     input_strides: Strides,
-    weight: Tensor,
+    weight_storage: Tensor,
     weight_shape: Shape,
     weight_strides: Strides,
     reverse: bool,
@@ -232,7 +232,7 @@ def _tensor_conv2d(
     """
     batch_, out_channels, _, _ = out_shape
     batch, in_channels, height, width = input_shape
-    out_channels_, in_channels_, kh, kw = weight_shape
+    out_channels_, in_channels_, kheight, kwidth = weight_shape
 
     assert (
         batch == batch_
@@ -242,12 +242,57 @@ def _tensor_conv2d(
 
     s1 = input_strides
     s2 = weight_strides
+
     # inners
     s10, s11, s12, s13 = s1[0], s1[1], s1[2], s1[3]
     s20, s21, s22, s23 = s2[0], s2[1], s2[2], s2[3]
 
-    # TODO: Implement for Task 4.2.
-    raise NotImplementedError('Need to implement for Task 4.2')
+    for i in prange(out_size):
+        out_idx = np.zeros(MAX_DIMS, np.int32)
+        in_idx = np.zeros(MAX_DIMS, np.int32)
+        weight_idx = np.zeros(MAX_DIMS, np.int32)
+        to_index(i, out_shape, out_idx)
+
+        b, oc, h, w = out_idx[0], out_idx[1], out_idx[2], out_idx[3]
+
+        tmp = 0
+        for ic in range(in_channels):
+            for kh in range(kheight):
+                for kw in range(kwidth):
+                    if reverse:
+                        if h - kh < 0 or w - kw < 0:
+                            continue
+
+                        in_idx[0] = b
+                        in_idx[1] = ic
+                        in_idx[2] = h - kh
+                        in_idx[3] = w - kw
+
+                        weight_idx[0] = oc
+                        weight_idx[1] = ic
+                        weight_idx[2] = kh
+                        weight_idx[3] = kw
+
+                        tmp += input_storage[index_to_position(in_idx, input_strides)] * \
+                            weight_storage[index_to_position(weight_idx, weight_strides)]
+                    else:
+                        if h + kh >= height or w + kw >= width:
+                            continue
+
+                        in_idx[0] = b
+                        in_idx[1] = ic
+                        in_idx[2] = h + kh
+                        in_idx[3] = w + kw
+
+                        weight_idx[0] = oc
+                        weight_idx[1] = ic
+                        weight_idx[2] = kh
+                        weight_idx[3] = kw
+
+                        tmp += input_storage[index_to_position(in_idx, input_strides)] * \
+                            weight_storage[index_to_position(weight_idx, weight_strides)]
+
+        out_storage[index_to_position(out_idx, out_strides)] = tmp
 
 
 tensor_conv2d = njit(parallel=True, fastmath=True)(_tensor_conv2d)
